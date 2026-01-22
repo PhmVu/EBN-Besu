@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  validator1:
+    image: hyperledger/besu:latest
+    container_name: besu-validator1
+    ports:
+      - "8545:8545"
+      - "8546:8546"
+      - "30303:30303"
+    environment:
+      - BESU_LOGGING=INFO
+    volumes:
+      - ./config/genesis.json:/config/genesis.json
+      - ./data/validator1:/data
+    command: >
+      --node-private-key-file=/data/nodekey --data-path=/data --genesis-file=/config/genesis.json --rpc-http-enabled --rpc-http-host=0.0.0.0 --rpc-http-port=8545 --rpc-http-api=ETH,NET,WEB3,ADMIN,QBFT,TXPOOL --rpc-http-cors-origins=* --host-allowlist=* --rpc-ws-enabled --rpc-ws-host=0.0.0.0 --rpc-ws-port=8546 --rpc-ws-api=ETH,NET,WEB3,ADMIN,QBFT,TXPOOL --engine-rpc-enabled --engine-rpc-port=8551 --p2p-port=30303 --p2p-host=0.0.0.0 --discovery-enabled=true --min-gas-price=0 --metrics-enabled=false
+    networks:
+      besu-network:
+        ipv4_address: 172.20.0.10
+
+  validator2:
+    image: hyperledger/besu:latest
+    container_name: besu-validator2
+    ports:
+      - "8547:8545"
+      - "30304:30303"
+    environment:
+      - BESU_LOGGING=INFO
+    volumes:
+      - ./config/genesis.json:/config/genesis.json
+      - ./data/validator2:/data
+    command: >
+      --node-private-key-file=/data/nodekey --data-path=/data --genesis-file=/config/genesis.json --bootnodes=enode://e7512308abab5b02b29ec3912a57351960272eef8b6f02328c0ddbb6676260708ae404b055a3cb395be5620cae3eac85152f613e59029c18e91b26b4f40224db@172.20.0.10:30303 --rpc-http-enabled --rpc-http-host=0.0.0.0 --rpc-http-port=8545 --rpc-http-api=ETH,NET,WEB3,ADMIN,QBFT,TXPOOL --rpc-http-cors-origins=* --host-allowlist=* --engine-rpc-enabled --engine-rpc-port=8551 --p2p-port=30303 --p2p-host=0.0.0.0 --discovery-enabled=true --min-gas-price=0 --metrics-enabled=false
+    networks:
+      besu-network:
+        ipv4_address: 172.20.0.11
+    depends_on:
+      - validator1
+
+  validator3:
+    image: hyperledger/besu:latest
+    container_name: besu-validator3
+    ports:
+      - "8548:8545"
+      - "30305:30303"
+    environment:
+      - BESU_LOGGING=INFO
+    volumes:
+      - ./config/genesis.json:/config/genesis.json
+      - ./data/validator3:/data
+    command: >
+      --node-private-key-file=/data/nodekey --data-path=/data --genesis-file=/config/genesis.json --bootnodes=enode://e7512308abab5b02b29ec3912a57351960272eef8b6f02328c0ddbb6676260708ae404b055a3cb395be5620cae3eac85152f613e59029c18e91b26b4f40224db@172.20.0.10:30303 --rpc-http-enabled --rpc-http-host=0.0.0.0 --rpc-http-port=8545 --rpc-http-api=ETH,NET,WEB3,ADMIN,QBFT,TXPOOL --rpc-http-cors-origins=* --host-allowlist=* --engine-rpc-enabled --engine-rpc-port=8551 --p2p-port=30303 --p2p-host=0.0.0.0 --discovery-enabled=true --min-gas-price=0 --metrics-enabled=false
+    networks:
+      besu-network:
+        ipv4_address: 172.20.0.12
+    depends_on:
+      - validator1
+
+  rpc-node:
+    image: hyperledger/besu:latest
+    container_name: besu-rpc-node
+    ports:
+      - "8549:8545"
+      - "8550:8546"
+      - "30306:30303"
+    environment:
+      - BESU_LOGGING=INFO
+    volumes:
+      - ./config/genesis.json:/config/genesis.json
+      - ./data/rpc-node:/data
+    command: >
+      --node-private-key-file=/data/nodekey --data-path=/data --genesis-file=/config/genesis.json --bootnodes=enode://e7512308abab5b02b29ec3912a57351960272eef8b6f02328c0ddbb6676260708ae404b055a3cb395be5620cae3eac85152f613e59029c18e91b26b4f40224db@172.20.0.10:30303 --rpc-http-enabled --rpc-http-host=0.0.0.0 --rpc-http-port=8545 --rpc-http-api=ETH,NET,WEB3,TXPOOL,TRACE --rpc-http-cors-origins=* --host-allowlist=* --rpc-ws-enabled --rpc-ws-host=0.0.0.0 --rpc-ws-port=8546 --rpc-ws-api=ETH,NET,WEB3,TXPOOL,TRACE --p2p-port=30303 --p2p-host=0.0.0.0 --discovery-enabled=true --min-gas-price=0 --metrics-enabled=false
+    networks:
+      besu-network:
+        ipv4_address: 172.20.0.13
+    depends_on:
+      - validator1
+
+networks:
+  besu-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24

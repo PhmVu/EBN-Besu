@@ -32,3 +32,11 @@ Thumbs.db
 # Logs
 *.log
 logs/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+besu-network/.env
+backend/.env
+frontend/.env

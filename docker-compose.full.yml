@@ -1,0 +1,167 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15
+    container_name: besu-training-db
+    environment:
+      POSTGRES_DB: besu_training
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - besu-training-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: besu-training-backend
+    environment:
+      PORT: 3000
+      NODE_ENV: production
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: besu_training
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      JWT_SECRET: ${JWT_SECRET:-change_this_secret}
+      RPC_URL: http://besu-rpc-node:8545
+      RPC_WS_URL: ws://besu-rpc-node:8546
+      CHAIN_ID: 1337
+      ADMIN_ADDRESS: ${ADMIN_ADDRESS}
+      ADMIN_PRIVATE_KEY: ${ADMIN_PRIVATE_KEY}
+      CLASS_MANAGER_ADDRESS: ${CLASS_MANAGER_ADDRESS}
+      SCORE_MANAGER_ADDRESS: ${SCORE_MANAGER_ADDRESS}
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      besu-rpc-node:
+        condition: service_started
+    networks:
+      - besu-training-network
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: besu-training-frontend
+    environment:
+      VITE_API_URL: http://localhost:3000/api
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    networks:
+      - besu-training-network
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+  # Besu Network (from besu-network directory)
+  besu-validator1:
+    image: hyperledger/besu:latest
+    container_name: besu-validator1
+    volumes:
+      - ./besu-network/config/genesis.json:/config/genesis.json
+      - ./besu-network/data/validator1:/data
+    command: >
+      --node-private-key-file=/data/nodekey --data-path=/data --genesis-file=/config/genesis.json
+      --rpc-http-enabled --rpc-http-host=0.0.0.0 --rpc-http-port=8545
+      --rpc-http-api=ETH,NET,WEB3,ADMIN,QBFT,TXPOOL --rpc-http-cors-origins=*
+      --host-allowlist=* --rpc-ws-enabled --rpc-ws-host=0.0.0.0 --rpc-ws-port=8546
+      --rpc-ws-api=ETH,NET,WEB3,ADMIN,QBFT,TXPOOL --engine-rpc-enabled --engine-rpc-port=8551
+      --p2p-port=30303 --p2p-host=0.0.0.0 --discovery-enabled=true
+      --min-gas-price=0 --metrics-enabled=false
+    networks:
+      besu-training-network:
+        ipv4_address: 172.20.0.10
+
+  besu-validator2:
+    image: hyperledger/besu:latest
+    container_name: besu-validator2
+    volumes:
+      - ./besu-network/config/genesis.json:/config/genesis.json
+      - ./besu-network/data/validator2:/data
+    command: >
+      --node-private-key-file=/data/nodekey --data-path=/data --genesis-file=/config/genesis.json
+      --bootnodes=enode://e7512308abab5b02b29ec3912a57351960272eef8b6f02328c0ddbb6676260708ae404b055a3cb395be5620cae3eac85152f613e59029c18e91b26b4f40224db@172.20.0.10:30303
+      --rpc-http-enabled --rpc-http-host=0.0.0.0 --rpc-http-port=8545
+      --rpc-http-api=ETH,NET,WEB3,ADMIN,QBFT,TXPOOL --rpc-http-cors-origins=*
+      --host-allowlist=* --engine-rpc-enabled --engine-rpc-port=8551
+      --p2p-port=30303 --p2p-host=0.0.0.0 --discovery-enabled=true
+      --min-gas-price=0 --metrics-enabled=false
+    networks:
+      besu-training-network:
+        ipv4_address: 172.20.0.11
+    depends_on:
+      - besu-validator1
+
+  besu-validator3:
+    image: hyperledger/besu:latest
+    container_name: besu-validator3
+    volumes:
+      - ./besu-network/config/genesis.json:/config/genesis.json
+      - ./besu-network/data/validator3:/data
+    command: >
+      --node-private-key-file=/data/nodekey --data-path=/data --genesis-file=/config/genesis.json
+      --bootnodes=enode://e7512308abab5b02b29ec3912a57351960272eef8b6f02328c0ddbb6676260708ae404b055a3cb395be5620cae3eac85152f613e59029c18e91b26b4f40224db@172.20.0.10:30303
+      --rpc-http-enabled --rpc-http-host=0.0.0.0 --rpc-http-port=8545
+      --rpc-http-api=ETH,NET,WEB3,ADMIN,QBFT,TXPOOL --rpc-http-cors-origins=*
+      --host-allowlist=* --engine-rpc-enabled --engine-rpc-port=8551
+      --p2p-port=30303 --p2p-host=0.0.0.0 --discovery-enabled=true
+      --min-gas-price=0 --metrics-enabled=false
+    networks:
+      besu-training-network:
+        ipv4_address: 172.20.0.12
+    depends_on:
+      - besu-validator1
+
+  besu-rpc-node:
+    image: hyperledger/besu:latest
+    container_name: besu-rpc-node
+    volumes:
+      - ./besu-network/config/genesis.json:/config/genesis.json
+      - ./besu-network/data/rpc-node:/data
+    command: >
+      --node-private-key-file=/data/nodekey --data-path=/data --genesis-file=/config/genesis.json
+      --bootnodes=enode://e7512308abab5b02b29ec3912a57351960272eef8b6f02328c0ddbb6676260708ae404b055a3cb395be5620cae3eac85152f613e59029c18e91b26b4f40224db@172.20.0.10:30303
+      --rpc-http-enabled --rpc-http-host=0.0.0.0 --rpc-http-port=8545
+      --rpc-http-api=ETH,NET,WEB3,TXPOOL,TRACE --rpc-http-cors-origins=*
+      --host-allowlist=* --rpc-ws-enabled --rpc-ws-host=0.0.0.0 --rpc-ws-port=8546
+      --rpc-ws-api=ETH,NET,WEB3,TXPOOL,TRACE --p2p-port=30303 --p2p-host=0.0.0.0
+      --discovery-enabled=true --min-gas-price=0 --metrics-enabled=false
+    ports:
+      - "8549:8545"
+      - "8550:8546"
+    networks:
+      besu-training-network:
+        ipv4_address: 172.20.0.13
+    depends_on:
+      - besu-validator1
+
+networks:
+  besu-training-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24
+
+volumes:
+  postgres_data:

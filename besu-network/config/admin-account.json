@@ -1,0 +1,4 @@
+{
+  "address": "0x912b3de983ebd0c5786f6e0b22f2b7387ba3591d",
+  "note": "This is the admin account for teacher. Private key should be stored securely in .env file, not in this file."
+}

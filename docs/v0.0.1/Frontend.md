@@ -1,7 +1,7 @@
 # PHASE 4: FRONTEND
 
 **Ngày bắt đầu:** TBD  
-**Trạng thái:** ⏳ PENDING  
+**Trạng thái:** ⏳ PENDING (Backend đã hoàn tất 100%)  
 **Timeline:** 3-5 days
 
 ---
@@ -9,6 +9,8 @@
 ## 📊 TỔNG QUAN
 
 Xây dựng Frontend (React/Vite) cho hệ thống quản lý lớp học.
+
+**Lưu ý quan trọng:** MetaMask và Remix IDE là **công cụ web bên ngoài** dùng để tương tác blockchain (deploy/tx). Frontend chỉ hướng dẫn/điều hướng, **không nhúng** MetaMask/Remix vào UI.
 
 ---
 
@@ -23,7 +25,8 @@ Xây dựng Frontend (React/Vite) cho hệ thống quản lý lớp học.
 | HTTP Client | Axios |
 | State Management | Context API |
 | Styling | TailwindCSS |
-| Wallet | Ethers.js + MetaMask |
+| Wallet | MetaMask (external) |
+| Smart Contract IDE | Remix IDE (external) |
 | UI Components | Headless UI / Radix UI |
 
 ### Directory Structure
@@ -115,16 +118,14 @@ frontend/
 - Email, password, fullName inputs
 - "Register" button
 - "Already have account?" link
-- Auto-generate wallet info
-- Show private key (one-time) with warning
-- Save warning: "Store this key securely"
+- Không tạo ví cho teacher
 
 **RegisterStudentPage**
-- Email, password, classCode inputs
+- Email, password, fullName inputs
 - "Register as Student" button
-- Class code validation
-- Auto-join class after registration
-- Wallet generation + display (show-once)
+- Tạo ví tự động (address + private key, show-once)
+- Sau đăng ký: student chọn lớp → bấm "Request Approval"
+- (Legacy) Nếu dùng classCode: gọi /api/auth/register-student
 
 ### 2. Teacher Dashboard
 
@@ -135,7 +136,7 @@ frontend/
 
 **Sidebar Navigation:**
 - My Classes
-- Approvals ← NEW
+- Approvals
 - Assignments
 - Submissions
 - Settings
@@ -146,15 +147,15 @@ frontend/
 - Class details (click to expand):
   - Class info (name, code, status)
   - Enrolled students count
-  - Pending approvals count ← NEW
-  - "Manage Approvals" button ← NEW
+  - Pending approvals count
+  - "Manage Approvals" button
   - "View Assignments" button
   - "Close Class" button (if OPEN)
 
 ### 3. Teacher - Approval Management ← NEW Phase 3.2
 
 **Pending Approvals Panel:**
-- Filter: All / Pending / Approved / Rejected
+- Filter: Pending / Approved / Rejected (query param `status`)
 - List of pending students:
   - Student email
   - Requested date
@@ -167,7 +168,7 @@ frontend/
 - "Approve" button
 - Loading state while TX pending
 - Success message with TX hash
-- "View on Besu Explorer" link ← NEW
+- "View on Besu Explorer" link
 - Refresh list after approval
 
 **Reject Modal:**
@@ -182,14 +183,14 @@ frontend/
   - Student email
   - Action (APPROVED/REJECTED)
   - Date
-  - TX hash (clickable → Besu Explorer) ← NEW
+  - TX hash (clickable → Besu Explorer)
   - Rejection reason (if rejected)
 
 ### 4. Student Dashboard
 
 **Overview:**
 - My classes list
-- Approval status for each class ← NEW
+- Approval status for each class
 - Quick assignment list
 
 **Classes Panel:**
@@ -198,15 +199,15 @@ frontend/
   - Class name + code
   - Approval status:
     - 🟡 PENDING - "Waiting for teacher approval"
-    - ✅ APPROVED - "You're in this class" + TX hash ← NEW
+    - ✅ APPROVED - "You're in this class" + TX hash
     - ❌ REJECTED - "Rejected: {reason}"
-    - ⏳ NOT_REQUESTED - "Request approval button" ← NEW
+    - ⏳ NOT_REQUESTED - "Request approval" button
 
-**Approval Status Details:** ← NEW
+**Approval Status Details:**
 - Show approval status with timeline:
   - Requested: [date]
   - Reviewed: [date] (if approved/rejected)
-  - TX Hash: [hash] with Besu Explorer link ← NEW
+  - TX Hash: [hash] with Besu Explorer link
 - If not yet requested: "Request Approval" button
 - If REJECTED: Show rejection reason + "Request again" button
 
@@ -240,8 +241,9 @@ frontend/
 - Class name input
 - Description textarea
 - "Create Class" button
-- Auto-deploys ClassManager + ScoreManager contracts
-- Show loading + TX hash while deploying
+- Sử dụng shared contracts (CLASS_MANAGER_ADDRESS + SCORE_MANAGER_ADDRESS)
+- Gọi on-chain createClass(classId)
+- Show loading + TX hash while creating
 - Redirect to class details on success
 
 **ClassDetail:**
@@ -263,19 +265,20 @@ frontend/
 - List of assignments for class
 - For each assignment:
   - Title + description
-  - Deadline
+  - Deadline (field: `deadline`)
   - Student submission count (teacher)
   - My submission status (student)
   - Action buttons
 
 **CreateAssignmentForm (Teacher):**
-- Title, description, deadline inputs
+- Title, description, deadline inputs (`deadline`)
 - "Create Assignment" button
 - Redirect to assignment detail
 
 **StudentSubmissionView:**
 - Assignment details
-- "Submit Assignment" button (if not submitted)
+-- "Submit Assignment" button (if not submitted)
+- Payload: { assignmentHash }
 - Shows submission status:
   - Not submitted: "Submit button active"
   - Submitted: "Grade: X/100" + "Submit date"
@@ -286,7 +289,7 @@ frontend/
 - For each submission:
   - Student name
   - Submission date
-  - Grade input
+  -- Grade input (0-100)
   - "Grade" button
   - TX hash (after grading)
 
@@ -294,13 +297,57 @@ frontend/
 
 ## 🔗 API INTEGRATION
 
+**Base URL:** `http://localhost:3000/api`
+
+### Endpoint Mapping (must match backend)
+
+**Auth**
+- `POST /auth/register` (body: { email, password, fullName, role })
+- `POST /auth/login`
+- `GET /auth/me`
+- `POST /auth/wallet-key`
+- `POST /auth/register-student` (legacy, not used in main flow)
+
+**Classes**
+- `POST /classes`
+- `GET /classes`
+- `GET /classes/:id`
+- `GET /classes/:id/statistics`
+- `POST /classes/:id/close`
+- `POST /classes/:id/students`
+
+**Approvals**
+- `POST /classes/:classId/request-approval`
+- `GET /classes/:classId/approvals?status=PENDING|APPROVED|REJECTED`
+- `GET /classes/:classId/my-approval-status`
+- `POST /approvals/:approvalId/approve`
+- `POST /approvals/:approvalId/reject`
+
+**Assignments**
+- `POST /classes/:classId/assignments`
+- `GET /classes/:classId/assignments`
+- `GET /assignments/:assignmentId`
+- `PUT /assignments/:assignmentId`
+- `DELETE /assignments/:assignmentId`
+
+**Submissions**
+- `POST /assignments/:assignmentId/submit` (body: { assignmentHash })
+- `GET /assignments/:assignmentId/submissions`
+- `GET /assignments/:assignmentId/my-submission`
+- `POST /assignments/:assignmentId/submissions/:studentId/score`
+
+**Students**
+- `GET /students/my-wallet`
+- `GET /students/my-classes`
+- `GET /students/my-scores`
+
 ### Services Architecture
 
 **authService.js:**
 ```javascript
 login(email, password)
-register(email, password, fullName)
-registerStudent(email, password, classCode)
+register({ email, password, fullName, role }) // role: teacher|student
+registerStudent(email, password, classCode) // legacy
 getProfile()
 getPrivateKey(password)
 logout()
@@ -308,9 +355,10 @@ logout()
 
 **classService.js:**
 ```javascript
-createClass(name, description)
+createClass({ classId, name, description })
 listClasses()
 getClassDetail(classId)
+getClassStatistics(classId)
 addStudentsToClass(classId, emails)
 closeClass(classId)
 ```
@@ -319,12 +367,12 @@ closeClass(classId)
 ```javascript
 getWalletInfo()
 getMyClasses()
-getMyScores()
+getMyScores() // returns { scores: [] }
 ```
 
 **assignmentService.js:**
 ```javascript
-createAssignment(classId, title, description, deadline)
+createAssignment(classId, { title, description, deadline })
 listAssignments(classId)
 getAssignment(assignmentId)
 updateAssignment(assignmentId, updates)
@@ -336,13 +384,13 @@ deleteAssignment(assignmentId)
 submitAssignment(assignmentId, assignmentHash)
 listSubmissions(assignmentId)
 getMySubmission(assignmentId)
-recordScore(submissionId, score)
+recordScore(assignmentId, studentId, score) // studentId = students.id
 ```
 
-**approvalService.js:** ← NEW Phase 3.2
+**approvalService.js:**
 ```javascript
 requestApproval(classId)
-getPendingApprovals(classId)
+getApprovals(classId, status = "PENDING")
 getMyApprovalStatus(classId)
 approveStudent(approvalId, password)
 rejectStudent(approvalId, password, reason)

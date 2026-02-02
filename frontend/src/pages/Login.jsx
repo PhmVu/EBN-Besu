@@ -6,7 +6,7 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [isRegister, setIsRegister] = useState(false);
+  const [mode, setMode] = useState("login");
   const [fullName, setFullName] = useState("");
   const { login, register } = useAuth();
   const navigate = useNavigate();
@@ -16,10 +16,11 @@ const Login = () => {
     setError("");
 
     try {
-      if (isRegister) {
-        await register(email, password, fullName);
-      } else {
+      if (mode === "login") {
         await login(email, password);
+      } else {
+        const role = mode === "register-teacher" ? "teacher" : "student";
+        await register({ email, password, fullName, role });
       }
       navigate("/dashboard");
     } catch (err) {
@@ -32,13 +33,50 @@ const Login = () => {
       <div style={styles.card}>
         <h1 style={styles.title}>Besu Training System</h1>
         <h2 style={styles.subtitle}>
-          {isRegister ? "Register as Teacher" : "Login"}
+          {mode === "login"
+            ? "Login"
+            : mode === "register-teacher"
+            ? "Register as Teacher"
+            : "Register as Student"}
         </h2>
+
+        <div style={styles.modeRow}>
+          <button
+            type="button"
+            onClick={() => setMode("login")}
+            style={{
+              ...styles.modeButton,
+              ...(mode === "login" ? styles.modeButtonActive : {}),
+            }}
+          >
+            Login
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("register-teacher")}
+            style={{
+              ...styles.modeButton,
+              ...(mode === "register-teacher" ? styles.modeButtonActive : {}),
+            }}
+          >
+            Register Teacher
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("register-student")}
+            style={{
+              ...styles.modeButton,
+              ...(mode === "register-student" ? styles.modeButtonActive : {}),
+            }}
+          >
+            Register Student
+          </button>
+        </div>
 
         {error && <div style={styles.error}>{error}</div>}
 
         <form onSubmit={handleSubmit} style={styles.form}>
-          {isRegister && (
+          {mode !== "login" && (
             <input
               type="text"
               placeholder="Full Name"
@@ -65,41 +103,15 @@ const Login = () => {
             style={styles.input}
           />
           <button type="submit" style={styles.button}>
-            {isRegister ? "Register" : "Login"}
+            {mode === "login" ? "Login" : "Register"}
           </button>
         </form>
-
-        <p style={styles.switch}>
-          {isRegister ? (
-            <>
-              Already have an account?{" "}
-              <a
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setIsRegister(false);
-                }}
-                style={styles.link}
-              >
-                Login
-              </a>
-            </>
-          ) : (
-            <>
-              Don't have an account?{" "}
-              <a
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setIsRegister(true);
-                }}
-                style={styles.link}
-              >
-                Register as Teacher
-              </a>
-            </>
-          )}
-        </p>
+        {mode === "register-student" && (
+          <div style={styles.hint}>
+            After registration, request approval from your teacher using the
+            class ID.
+          </div>
+        )}
       </div>
     </div>
   );
@@ -132,6 +144,25 @@ const styles = {
     color: "#666",
     fontSize: "1.2rem",
   },
+  modeRow: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr 1fr",
+    gap: "0.5rem",
+    marginBottom: "1rem",
+  },
+  modeButton: {
+    padding: "0.5rem",
+    border: "1px solid #ddd",
+    backgroundColor: "#fff",
+    borderRadius: "4px",
+    cursor: "pointer",
+    fontSize: "0.85rem",
+  },
+  modeButtonActive: {
+    backgroundColor: "#007bff",
+    color: "white",
+    borderColor: "#007bff",
+  },
   form: {
     display: "flex",
     flexDirection: "column",
@@ -159,14 +190,11 @@ const styles = {
     backgroundColor: "#ffe6e6",
     borderRadius: "4px",
   },
-  switch: {
-    textAlign: "center",
+  hint: {
     marginTop: "1rem",
+    fontSize: "0.9rem",
     color: "#666",
-  },
-  link: {
-    color: "#007bff",
-    textDecoration: "none",
+    textAlign: "center",
   },
 };
 

@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import Login from "./pages/Login";
 import TeacherDashboard from "./pages/TeacherDashboard";
 import StudentDashboard from "./pages/StudentDashboard";
+import StudentClassPage from "./pages/StudentClassPage";
 
 const PrivateRoute = ({ children, requiredRole }) => {
   const { user, loading } = useAuth();
@@ -31,6 +32,14 @@ const AppRoutes = () => {
         element={
           <PrivateRoute>
             <DashboardRouter />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/student/classes/:classId"
+        element={
+          <PrivateRoute requiredRole="student">
+            <StudentClassPage />
           </PrivateRoute>
         }
       />

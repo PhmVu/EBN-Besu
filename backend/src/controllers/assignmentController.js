@@ -9,7 +9,7 @@ class AssignmentController {
     const client = await db.connect();
     try {
       const { classId } = req.params;
-      const { title, description, deadline } = req.body;
+      const { title, description, deadline, assignment_code } = req.body;
       const teacherId = req.user.id;
 
       if (!title) {
@@ -33,10 +33,10 @@ class AssignmentController {
 
       // Create assignment
       const result = await client.query(
-        `INSERT INTO assignments (class_id, title, description, deadline)
-         VALUES ($1, $2, $3, $4)
-         RETURNING id, class_id, title, description, deadline, created_at`,
-        [classId, title, description, deadline || null]
+        `INSERT INTO assignments (class_id, assignment_code, title, description, deadline)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING id, class_id, assignment_code, title, description, deadline, created_at`,
+        [classId, assignment_code || null, title, description, deadline || null]
       );
 
       res.status(201).json({
@@ -60,7 +60,7 @@ class AssignmentController {
       const { classId } = req.params;
 
       const result = await client.query(
-        `SELECT id, class_id, title, description, deadline, created_at
+        `SELECT id, class_id, assignment_code, title, description, deadline, created_at
          FROM assignments
          WHERE class_id = $1
          ORDER BY created_at DESC`,
@@ -87,7 +87,7 @@ class AssignmentController {
       const { assignmentId } = req.params;
 
       const result = await client.query(
-        `SELECT id, class_id, title, description, deadline, created_at
+        `SELECT id, class_id, assignment_code, title, description, deadline, created_at
          FROM assignments
          WHERE id = $1`,
         [assignmentId]
@@ -113,7 +113,7 @@ class AssignmentController {
     const client = await db.connect();
     try {
       const { assignmentId } = req.params;
-      const { title, description, deadline } = req.body;
+      const { title, description, deadline, assignment_code } = req.body;
       const teacherId = req.user.id;
 
       // Get assignment and verify teacher owns it
@@ -136,13 +136,14 @@ class AssignmentController {
       // Update assignment
       const result = await client.query(
         `UPDATE assignments
-         SET title = COALESCE($1, title),
-             description = COALESCE($2, description),
-             deadline = COALESCE($3, deadline),
+         SET assignment_code = COALESCE($1, assignment_code),
+             title = COALESCE($2, title),
+             description = COALESCE($3, description),
+             deadline = COALESCE($4, deadline),
              updated_at = CURRENT_TIMESTAMP
-         WHERE id = $4
-         RETURNING id, class_id, title, description, deadline, created_at, updated_at`,
-        [title, description, deadline, assignmentId]
+         WHERE id = $5
+         RETURNING id, class_id, assignment_code, title, description, deadline, created_at, updated_at`,
+        [assignment_code, title, description, deadline, assignmentId]
       );
 
       res.json({

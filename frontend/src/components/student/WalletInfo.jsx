@@ -1,10 +1,16 @@
 import { useState, useEffect } from "react";
 import api from "../../services/api";
+import { useAuth } from "../../context/AuthContext";
 
 const WalletInfo = () => {
   const [wallet, setWallet] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [password, setPassword] = useState("");
+  const [privateKey, setPrivateKey] = useState("");
+  const [showKeyError, setShowKeyError] = useState("");
+  const [showKeyLoading, setShowKeyLoading] = useState(false);
+  const { getPrivateKey } = useAuth();
 
   useEffect(() => {
     fetchWallet();
@@ -57,6 +63,41 @@ const WalletInfo = () => {
           <label style={styles.label}>Chain ID:</label>
           <div style={styles.value}>1337</div>
         </div>
+        <div style={styles.field}>
+          <label style={styles.label}>Private Key (show once):</label>
+          {privateKey ? (
+            <div style={styles.value}>{privateKey}</div>
+          ) : (
+            <div style={styles.keyBox}>
+              <input
+                type="password"
+                placeholder="Enter password to reveal"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                style={styles.input}
+              />
+              <button
+                onClick={async () => {
+                  setShowKeyError("");
+                  setShowKeyLoading(true);
+                  try {
+                    const data = await getPrivateKey(password);
+                    setPrivateKey(data.privateKey);
+                  } catch (err) {
+                    setShowKeyError(err.response?.data?.error || "Failed to load key");
+                  } finally {
+                    setShowKeyLoading(false);
+                  }
+                }}
+                style={styles.button}
+                disabled={showKeyLoading || !password}
+              >
+                {showKeyLoading ? "Loading..." : "Show Private Key"}
+              </button>
+            </div>
+          )}
+          {showKeyError && <div style={styles.error}>{showKeyError}</div>}
+        </div>
       </div>
     </div>
   );
@@ -96,6 +137,26 @@ const styles = {
     fontSize: "0.9rem",
     color: "#666",
     fontStyle: "italic",
+  },
+  keyBox: {
+    display: "flex",
+    gap: "0.5rem",
+    alignItems: "center",
+    flexWrap: "wrap",
+  },
+  input: {
+    padding: "0.5rem",
+    border: "1px solid #ddd",
+    borderRadius: "4px",
+    minWidth: "220px",
+  },
+  button: {
+    padding: "0.5rem 0.75rem",
+    backgroundColor: "#007bff",
+    color: "white",
+    border: "none",
+    borderRadius: "4px",
+    cursor: "pointer",
   },
   error: {
     color: "red",

@@ -1,9 +1,6 @@
-import { useState } from "react";
 import api from "../../services/api";
-import { useNavigate } from "react-router-dom";
 
-const ClassList = ({ classes, onRefresh }) => {
-  const navigate = useNavigate();
+const ClassList = ({ classes, onRefresh, onSelect, selectedClassId }) => {
 
   const handleCloseClass = async (classId, classDbId) => {
     if (!window.confirm("Are you sure you want to close this class?")) {
@@ -32,9 +29,18 @@ const ClassList = ({ classes, onRefresh }) => {
       <h2>My Classes</h2>
       <div style={styles.grid}>
         {classes.map((classItem) => (
-          <div key={classItem.id} style={styles.card}>
+          <div
+            key={classItem.id}
+            style={{
+              ...styles.card,
+              ...(selectedClassId === classItem.id ? styles.cardActive : {}),
+            }}
+          >
             <h3 style={styles.cardTitle}>{classItem.name}</h3>
             <p style={styles.classId}>Class ID: {classItem.class_id}</p>
+            <p style={{ fontSize: "0.9rem", color: "#666", margin: "0.25rem 0" }}>
+              <strong>DB ID for students:</strong> {classItem.id}
+            </p>
             <p style={styles.description}>{classItem.description}</p>
             <div style={styles.status}>
               Status:{" "}
@@ -48,10 +54,10 @@ const ClassList = ({ classes, onRefresh }) => {
             </div>
             <div style={styles.actions}>
               <button
-                onClick={() => navigate(`/classes/${classItem.id}`)}
+                onClick={() => onSelect?.(classItem)}
                 style={styles.viewButton}
               >
-                View Details
+                Select
               </button>
               {classItem.status === "open" && (
                 <button
@@ -87,6 +93,10 @@ const styles = {
     borderRadius: "8px",
     padding: "1.5rem",
     backgroundColor: "#fafafa",
+  },
+  cardActive: {
+    borderColor: "#007bff",
+    boxShadow: "0 0 0 1px #007bff",
   },
   cardTitle: {
     marginTop: 0,

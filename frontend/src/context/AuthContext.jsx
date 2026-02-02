@@ -43,14 +43,20 @@ export const AuthProvider = ({ children }) => {
     return response.data;
   };
 
-  const register = async (email, password, fullName) => {
+  const register = async ({ email, password, fullName, role }) => {
     const response = await api.post("/auth/register", {
       email,
       password,
       fullName,
+      role,
     });
     localStorage.setItem("token", response.data.token);
     setUser(response.data.user);
+    return response.data;
+  };
+
+  const getPrivateKey = async (password) => {
+    const response = await api.post("/auth/wallet-key", { password });
     return response.data;
   };
 
@@ -60,7 +66,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider
+      value={{ user, loading, login, register, getPrivateKey, logout }}
+    >
       {children}
     </AuthContext.Provider>
   );

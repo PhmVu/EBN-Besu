@@ -1,9 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
-import api from "../services/api";
 import WalletInfo from "../components/student/WalletInfo";
 import MyClasses from "../components/student/MyClasses";
-import MyScores from "../components/student/MyScores";
+import ApprovalPanel from "../components/student/ApprovalPanel";
 
 const StudentDashboard = () => {
   const { user, logout } = useAuth();
@@ -42,20 +41,21 @@ const StudentDashboard = () => {
             My Classes
           </button>
           <button
-            onClick={() => setActiveTab("scores")}
+            onClick={() => setActiveTab("approvals")}
             style={{
               ...styles.tab,
-              ...(activeTab === "scores" ? styles.activeTab : {}),
+              ...(activeTab === "approvals" ? styles.activeTab : {}),
             }}
           >
-            My Scores
+            Approvals
           </button>
+          
         </div>
 
         <div style={styles.content}>
           {activeTab === "wallet" && <WalletInfo />}
           {activeTab === "classes" && <MyClasses />}
-          {activeTab === "scores" && <MyScores />}
+          {activeTab === "approvals" && <ApprovalPanel />}
         </div>
       </main>
     </div>

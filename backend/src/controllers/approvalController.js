@@ -104,7 +104,7 @@ class ApprovalController {
 
       // Get approval requests with specified status
       const result = await client.query(
-        `SELECT a.id, a.class_id, a.student_id, u.email, u.wallet_address,
+        `SELECT a.id, a.class_id, a.student_id, u.email, u.full_name, u.wallet_address,
                 a.wallet_address as approval_wallet, a.status, a.requested_at,
                 a.reviewed_at, a.rejection_reason
          FROM student_approvals a
@@ -129,9 +129,8 @@ class ApprovalController {
   /**
    * Teacher: Approve student + sign TX to whitelist on-chain
    * POST /api/approvals/:approvalId/approve
-   * Body: { password }
-   * - Teacher nhập password
-   * - Backend verify password → recover teacher's signer
+  * Body: {}
+  * - Teacher approval without password
    * - Call ClassManager.addStudent(studentAddress) ← signed by teacher
    * - Update approval record: status=APPROVED, tx_hash, reviewed_at
    */
@@ -139,12 +138,8 @@ class ApprovalController {
     const client = await db.connect();
     try {
       const { approvalId } = req.params;
-      const { password } = req.body;
+      const { } = req.body || {};
       const teacherId = req.user.id;
-
-      if (!password) {
-        return res.status(400).json({ error: "Password required" });
-      }
 
       // Get approval record
       const approvalResult = await client.query(
@@ -177,13 +172,6 @@ class ApprovalController {
         return res.status(400).json({
           error: `Approval is already ${approval.status.toLowerCase()}`,
         });
-      }
-
-      // Verify teacher password
-      const teacher = await User.findById(teacherId);
-      const isValid = await bcrypt.compare(password, teacher.password_hash);
-      if (!isValid) {
-        return res.status(401).json({ error: "Invalid password" });
       }
 
       // Execute on-chain whitelist
@@ -245,19 +233,15 @@ class ApprovalController {
   /**
    * Teacher: Reject student approval request
    * POST /api/approvals/:approvalId/reject
-   * Body: { password, reason }
-   * - Teacher reject + provide reason
+  * Body: { reason }
+  * - Teacher reject + provide reason (no password)
    */
   static async rejectStudent(req, res, next) {
     const client = await db.connect();
     try {
       const { approvalId } = req.params;
-      const { password, reason } = req.body;
+      const { reason } = req.body;
       const teacherId = req.user.id;
-
-      if (!password) {
-        return res.status(400).json({ error: "Password required" });
-      }
 
       // Get approval record
       const approvalResult = await client.query(
@@ -287,13 +271,6 @@ class ApprovalController {
         return res.status(400).json({
           error: `Approval is already ${approval.status.toLowerCase()}`,
         });
-      }
-
-      // Verify teacher password
-      const teacher = await User.findById(teacherId);
-      const isValid = await bcrypt.compare(password, teacher.password_hash);
-      if (!isValid) {
-        return res.status(401).json({ error: "Invalid password" });
       }
 
       // Update approval record

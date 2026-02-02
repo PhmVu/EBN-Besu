@@ -56,12 +56,17 @@ CREATE TABLE IF NOT EXISTS class_students (
 CREATE TABLE IF NOT EXISTS assignments (
     id SERIAL PRIMARY KEY,
     class_id INTEGER NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+    assignment_code VARCHAR(100),
     title VARCHAR(255) NOT NULL,
     description TEXT,
     deadline TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Ensure new columns exist for existing databases
+ALTER TABLE assignments
+    ADD COLUMN IF NOT EXISTS assignment_code VARCHAR(100);
 
 -- Submissions table: Tracks student submissions
 CREATE TABLE IF NOT EXISTS submissions (
@@ -123,6 +128,7 @@ CREATE INDEX IF NOT EXISTS idx_students_user ON students(user_id);
 CREATE INDEX IF NOT EXISTS idx_class_students_class ON class_students(class_id);
 CREATE INDEX IF NOT EXISTS idx_class_students_user ON class_students(user_id);
 CREATE INDEX IF NOT EXISTS idx_assignments_class ON assignments(class_id);
+CREATE INDEX IF NOT EXISTS idx_assignments_code ON assignments(assignment_code);
 CREATE INDEX IF NOT EXISTS idx_submissions_assignment ON submissions(assignment_id);
 CREATE INDEX IF NOT EXISTS idx_submissions_student ON submissions(student_id);
 CREATE INDEX IF NOT EXISTS idx_scores_class ON scores(class_id);

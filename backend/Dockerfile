@@ -1,4 +1,4 @@
-FROM node:18-alpine
+FROM node:18-bullseye-slim
 
 WORKDIR /app
 
@@ -9,4 +9,4 @@ COPY . .
 
 EXPOSE 3000
 
-CMD ["npm", "start"]
+CMD ["sh", "-c", "node src/db/migrate.js && node src/app.js"]

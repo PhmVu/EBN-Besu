@@ -1,15 +1,18 @@
 const { ethers } = require("ethers");
-require("dotenv").config();
+const { blockchain } = require("./env");
 
 // RPC Provider
-const rpcUrl = process.env.RPC_URL || "http://localhost:8549";
-const provider = new ethers.JsonRpcProvider(rpcUrl);
+const provider = new ethers.JsonRpcProvider(blockchain.rpcUrl);
 
 // Admin Wallet (for deploying contracts and admin operations)
 let adminWallet = null;
-if (process.env.ADMIN_PRIVATE_KEY) {
-  adminWallet = new ethers.Wallet(process.env.ADMIN_PRIVATE_KEY, provider);
+if (blockchain.adminPrivateKey) {
+  adminWallet = new ethers.Wallet(blockchain.adminPrivateKey, provider);
   console.log("Admin wallet loaded:", adminWallet.address);
+} else {
+  console.warn(
+    "WARNING: ADMIN_PRIVATE_KEY not configured. Smart contract deployment will fail."
+  );
 }
 
 // Contract addresses (set after deployment)
@@ -22,5 +25,5 @@ module.exports = {
   provider,
   adminWallet,
   contractAddresses,
-  chainId: parseInt(process.env.CHAIN_ID || "1337"),
+  chainId: blockchain.chainId,
 };

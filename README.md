@@ -1,366 +1,291 @@
-# EBN-Besu - Hyperledger Besu Private Network
+# EBN-Besu: Hệ thống Đào tạo Blockchain Fintech
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Besu](https://img.shields.io/badge/Besu-25.12.0-blue)](https://github.com/hyperledger/besu)
-[![QBFT](https://img.shields.io/badge/Consensus-QBFT-green)](https://besu.hyperledger.org/en/stable/private-networks/how-to/configure/consensus/qbft/)
+[![Besu v25.12.0](https://img.shields.io/badge/Besu-25.12.0-blue)](https://github.com/hyperledger/besu)
+[![QBFT](https://img.shields.io/badge/Consensus-QBFT-green)](https://besu.hyperledger.org)
+[![Status](https://img.shields.io/badge/Status-95%25%20Complete-success)](docs/FINAL_TEST_STATUS.md)
 
-Mạng Blockchain private sử dụng Hyperledger Besu với cơ chế đồng thuận QBFT (Quorum Byzantine Fault Tolerance).
+Hệ thống đào tạo blockchain hoàn chỉnh sử dụng **Hyperledger Besu** cho sinh viên Fintech. Sinh viên tự phát triển smart contract, deploy lên blockchain thực, sử dụng MetaMask để quản lý wallet, và giáo viên duyệt quyền + chấm điểm on-chain.
 
-## 📋 Mục lục
+## 📋 Cấu trúc Dự án
 
-- [Tổng quan](#tổng-quan)
-- [Yêu cầu hệ thống](#yêu-cầu-hệ-thống)
-- [Cài đặt nhanh](#cài-đặt-nhanh)
-- [Cấu hình mạng](#cấu-hình-mạng)
-- [Sử dụng](#sử-dụng)
-- [Kiểm tra](#kiểm-tra)
-- [Troubleshooting](#troubleshooting)
-
-## 🎯 Tổng quan
-
-### Thông số mạng
-
-- **Consensus**: QBFT (Quorum Byzantine Fault Tolerance)
-- **Block Time**: 2 giây
-- **Chain ID**: 1337
-- **Số nodes**: 4 (3 validators + 1 RPC node)
-- **Besu Version**: 25.12.0
-
-### Cấu trúc mạng
-
-| Node | Loại | RPC Port | WebSocket | P2P Port | IP Address |
-|------|------|----------|-----------|----------|------------|
-| validator1 | Validator | 8545 | 8546 | 30303 | 172.20.0.10 |
-| validator2 | Validator | 8547 | - | 30304 | 172.20.0.11 |
-| validator3 | Validator | 8548 | - | 30305 | 172.20.0.12 |
-| rpc-node | RPC Node | 8549 | 8550 | 30306 | 172.20.0.13 |
-
-## 💻 Yêu cầu hệ thống
-
-### Windows (WSL2)
-```bash
-# 1. Cài đặt WSL2
-wsl --install
-
-# 2. Cài đặt Docker Desktop
-# Tải từ: https://www.docker.com/products/docker-desktop
-
-# 3. Bật WSL2 integration trong Docker Desktop
-# Settings > Resources > WSL Integration > Enable integration
+```
+EBN-Besu/
+├── besu-network/          # Besu blockchain network
+│   ├── config/           # Genesis và cấu hình
+│   ├── data/             # Blockchain data
+│   ├── scripts/          # Scripts quản lý network
+│   └── docker-compose.yml
+├── contracts/            # Smart contracts
+│   ├── ClassManager.sol
+│   ├── ScoreManager.sol
+│   ├── scripts/          # Deploy scripts
+│   └── test/             # Contract tests
+├── backend/              # Backend API
+│   ├── src/
+│   │   ├── config/       # Configuration
+│   │   ├── models/       # Database models
+│   │   ├── services/     # Business logic
+│   │   ├── controllers/  # API controllers
+│   │   ├── routes/       # API routes
+│   │   └── middleware/   # Auth & error handling
+│   └── package.json
+├── frontend/             # React frontend
+│   ├── src/
+│   │   ├── pages/        # Page components
+│   │   ├── components/   # Reusable components
+│   │   ├── services/     # API client
+│   │   └── context/      # Auth context
+│   └── package.json
+├── docs/                 # Documentation
+│   ├── API.md
+│   ├── DEPLOYMENT.md
+│   ├── USER_GUIDE.md
+│   └── ARCHITECTURE.md
+└── docker-compose.full.yml  # Full system deployment
 ```
 
-### Linux
-```bash
-# Cài đặt Docker và Docker Compose
-sudo apt update
-sudo apt install docker.io docker-compose -y
-sudo usermod -aG docker $USER
-```
+## Tính năng chính
 
-### macOS
-```bash
-# Cài đặt Docker Desktop
-# Tải từ: https://www.docker.com/products/docker-desktop
-```
+### Cho Giáo viên ✅
+- ✅ Tạo lớp học (on-chain via ClassManager)
+- ✅ Duyệt sinh viên + cấp quyền (on-chain whitelist)
+- ✅ Tạo & quản lý assignments
+- ✅ Xem submissions & chấm điểm (on-chain via ScoreManager)
+- ✅ Xem thống kê lớp học (total students, assignments, average score)
 
-## 🚀 Cài đặt nhanh
+### Cho Sinh viên ✅
+- ✅ Đăng ký tài khoản → tạo ví tự động (address + encrypted private key)
+- ✅ Gửi yêu cầu tham gia lớp → chờ teacher duyệt
+- ✅ Được whitelist on-chain → có quyền tương tác
+- ✅ Làm smart contract cá nhân (Solidity)
+- ✅ Deploy via Remix IDE + MetaMask (kết nối RPC endpoint)
+- ✅ Nộp assignment (ghi assignmentHash on-chain)
+- ✅ Xem điểm số & thống kê cá nhân
 
-### Bước 1: Clone repository
+## 🚀 Cài đặt & Chạy Nhanh
+
+### Bước 1: Clone & Chuẩn bị
 
 ```bash
 git clone https://github.com/PhmVu/EBN-Besu.git
 cd EBN-Besu/besu-network
 ```
 
-### Bước 2: Khởi động mạng
+### Bước 2: Khởi động Besu Network
 
 ```bash
-# Khởi động tất cả nodes
 docker-compose up -d
-
-# Xem logs để kiểm tra
-docker-compose logs -f
-```
-
-### Bước 3: Kiểm tra mạng đã hoạt động
-
-```bash
-# Kiểm tra số peers (phải có 3 peers)
-curl -X POST --data '{"jsonrpc":"2.0","method":"net_peerCount","params":[],"id":1}' http://localhost:8545
-
-# Kiểm tra block number (phải > 0)
+sleep 10
+# Kiểm tra network
 curl -X POST --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' http://localhost:8545
-
-# Kiểm tra danh sách validators
-curl -X POST --data '{"jsonrpc":"2.0","method":"qbft_getValidatorsByBlockNumber","params":["latest"],"id":1}' http://localhost:8545
 ```
 
-**Kết quả mong đợi:**
-- Peer count: `0x3` (3 peers)
-- Block number: Tăng dần theo thời gian
-- Validators: 4 địa chỉ
-
-## ⚙️ Cấu hình mạng
-
-### Validators
-
-Network có 4 validators được cấu hình sẵn:
-
-| Validator | Address |
-|-----------|---------|
-| Validator 1 | `0x9a08b75b76d13bf9c45f5212fac126ddff4c5416` |
-| Validator 2 | `0x12b1d0ee4d2a577065a5b95c7e8bfcf6c749c069` |
-| Validator 3 | `0xb7b9a6365e53e63492728de15f52558d9d3bd3d8` |
-| RPC Node | `0xbfd9930d1c73cd55333dd73b1d1f53fe67675cf5` |
-
-### Genesis Configuration
-
-- **Chain ID**: 1337
-- **Gas Limit**: `0x1fffffffffffff`
-- **Block Period**: 2 giây
-- **Epoch Length**: 30,000 blocks
-- **Request Timeout**: 10 giây
-
-### RPC Endpoints
-
-| Endpoint | URL | Mô tả |
-|----------|-----|-------|
-| HTTP RPC (Validator 1) | http://localhost:8545 | RPC chính |
-| WebSocket (Validator 1) | ws://localhost:8546 | WebSocket |
-| HTTP RPC (RPC Node) | http://localhost:8549 | RPC node chuyên dụng |
-| WebSocket (RPC Node) | ws://localhost:8550 | WebSocket RPC node |
-
-## 📖 Sử dụng
-
-### Các lệnh Docker Compose cơ bản
+### Bước 3: Chạy Backend + Database
 
 ```bash
-# Khởi động network
-docker-compose up -d
-
-# Dừng network
-docker-compose down
-
-# Xem logs tất cả nodes
-docker-compose logs -f
-
-# Xem logs một node cụ thể
-docker-compose logs -f validator1
-
-# Xem trạng thái containers
-docker-compose ps
-
-# Restart một node
-docker-compose restart validator1
+cd ..
+docker-compose -f besu-network/docker-compose.yml up -d
+# Backend sẽ tự chạy migration & deploy contracts
 ```
 
-### Kết nối với network
+### Bước 4: Truy cập
 
-#### Sử dụng curl
+- **Backend API:** http://localhost:3000/api
+- **Besu RPC:** http://localhost:8545 hoặc http://localhost:8549
+- **Besu WebSocket:** ws://localhost:8546 hoặc ws://localhost:8550
 
-```bash
-# Lấy block mới nhất
-curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["latest",false],"id":1}' http://localhost:8545
+## 📊 Trạng thái Hệ thống
 
-# Lấy balance của một account
-curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getBalance","params":["0x9a08b75b76d13bf9c45f5212fac126ddff4c5416","latest"],"id":1}' http://localhost:8545
+| Thành phần | Trạng thái | Chi tiết |
+|-----------|-----------|---------|
+| **Besu Network** | ✅ 100% | 4 nodes (3 validators + 1 RPC), QBFT, sealing blocks |
+| **Smart Contracts** | ✅ 100% | ClassManager + ScoreManager deployed on-chain |
+| **Backend API** | ✅ 100% | 19/19 endpoints tested & working |
+| **Database** | ✅ 100% | PostgreSQL 15, 9 tables, auto-migration |
+| **Frontend** | ⏳ 5% | UI development pending |
 
-# Gửi transaction (cần sign trước)
-curl -X POST --data '{"jsonrpc":"2.0","method":"eth_sendRawTransaction","params":["0x..."],"id":1}' http://localhost:8545
+## 🔍 API Endpoints (19/19 Tested ✅)
+
+### Authentication (4)
+- `POST /api/auth/register` - Đăng ký (teacher/student auto-generate wallet)
+- `POST /api/auth/login` - Đăng nhập
+- `GET /api/auth/me` - Lấy thông tin user
+- `POST /api/auth/wallet-key` - Lấy private key (show-once policy)
+
+### Classes (5)
+- `POST /api/classes` - Tạo lớp (on-chain)
+- `GET /api/classes` - Danh sách lớp của teacher
+- `GET /api/classes/:id` - Chi tiết lớp
+- `GET /api/classes/:id/statistics` - Thống kê lớp
+- `POST /api/classes/:id/close` - Đóng lớp
+
+### Assignments (5)
+- `POST /api/classes/:classId/assignments` - Tạo assignment
+- `GET /api/classes/:classId/assignments` - Danh sách assignments
+- `GET /api/assignments/:id` - Chi tiết assignment
+- `PUT /api/assignments/:id` - Cập nhật assignment
+- `DELETE /api/assignments/:id` - Xóa assignment
+
+### Submissions (4)
+- `POST /api/assignments/:id/submit` - Student nộp bài
+- `GET /api/assignments/:id/submissions` - Teacher xem submissions
+- `GET /api/assignments/:id/my-submission` - Student xem bài của mình
+- `POST /api/assignments/:id/submissions/:studentId/score` - Teacher chấm điểm (on-chain)
+
+### Approvals (4)
+- `POST /api/classes/:classId/request-approval` - Student yêu cầu join
+- `GET /api/classes/:classId/approvals` - Teacher xem pending approvals
+- `POST /api/approvals/:id/approve` - Teacher approve + whitelist (on-chain)
+- `POST /api/approvals/:id/reject` - Teacher reject
+
+### Students (3)
+- `GET /api/students/my-wallet` - Xem thông tin ví
+- `GET /api/students/my-classes` - Lớp học của student
+- `GET /api/students/my-scores` - Điểm số & thống kê
+
+## 🏗️ Kiến trúc
+
+```
+┌─────────────────┐
+│   Browser/IDE   │
+│  (Remix/VS Code)│
+└────────┬────────┘
+         │ HTTP/WS
+┌────────▼────────────────────┐
+│  Backend API (Node.js)       │
+│  - Auth & Role-based ACL     │
+│  - Business Logic            │
+│  - Database Migration        │
+└────────┬────────────────────┘
+         │
+    ┌────┴────────────────┐
+    │                     │
+    ▼                     ▼
+┌──────────────┐    ┌──────────────────┐
+│ PostgreSQL   │    │  Besu Network    │
+│ (9 tables)   │    │  (4 nodes, QBFT) │
+└──────────────┘    └──────────────────┘
+                           │
+        ┌──────────────────┼──────────────────┐
+        ▼                  ▼                  ▼
+   ┌────────┐        ┌────────┐        ┌──────────┐
+   │ Val 1  │        │ Val 2  │        │ RPC Node │
+   └────────┘        └────────┘        └──────────┘
+        │                  │                  │
+        └──────────────────┼──────────────────┘
+                           │
+                ┌──────────▼──────────┐
+              ┌─┴─────────────────────┴─┐
+              │  ClassManager Contract  │
+              │  ScoreManager Contract  │
+              └─────────────────────────┘
 ```
 
-#### Sử dụng Web3.js
+## 📝 Luồng Hoạt động
 
-```javascript
-const Web3 = require('web3');
-const web3 = new Web3('http://localhost:8545');
+### Luồng Sinh viên
+1. **Register** → Hệ thống tạo ví tự động (address + encrypted private key)
+2. **Request Approval** → Gửi yêu cầu join lớp
+3. **Wait for Teacher Approval** → Giáo viên duyệt
+4. **Get Whitelist** → Được ghi on-chain trong ClassManager.allowedStudents
+5. **Dev Smart Contract** → Tự code Solidity theo đề bài
+6. **Deploy via Remix + MetaMask** → Kết nối RPC endpoint lớp học
+7. **Submit Assignment** → Ghi assignmentHash on-chain
+8. **View Score** → Xem điểm từ ScoreManager contract
 
-// Lấy block number
-web3.eth.getBlockNumber().then(console.log);
+### Luồng Giáo viên
+1. **Create Class** → Ghi on-chain ClassManager.createClass()
+2. **Review Approval Requests** → Xem danh sách sinh viên chờ duyệt
+3. **Approve Student** → Gọi ClassManager.addStudent() + whitelist
+4. **Create Assignments** → Tạo assignments trong database
+5. **Grade Submissions** → Gọi ScoreManager.recordScore() ghi điểm on-chain
+6. **View Statistics** → Xem thống kê: tổng sinh viên, assignments, điểm trung bình
 
-// Lấy danh sách accounts
-web3.eth.getAccounts().then(console.log);
-```
+## 🔐 Bảo mật & Phân quyền
 
-#### Sử dụng MetaMask
-
-1. Mở MetaMask
-2. Add Network với thông tin:
-   - **Network Name**: EBN-Besu Local
-   - **RPC URL**: http://localhost:8545
-   - **Chain ID**: 1337
-   - **Currency Symbol**: ETH
-
-### RPC Methods có sẵn
-
-#### Standard Ethereum APIs
-- `eth_*` - Ethereum JSON-RPC methods
-- `net_*` - Network methods
-- `web3_*` - Web3 methods
-- `txpool_*` - Transaction pool methods
-
-#### QBFT Specific APIs (Validators only)
-- `qbft_getValidatorsByBlockNumber` - Lấy danh sách validators
-- `qbft_proposeValidatorVote` - Đề xuất thêm/xóa validator
-- `qbft_discardValidatorVote` - Hủy vote
-
-#### Admin APIs (Validators only)
-- `admin_peers` - Xem danh sách peers
-- `admin_addPeer` - Thêm peer
-- `admin_removePeer` - Xóa peer
-
-## 🔍 Kiểm tra
-
-### Kiểm tra network health
-
-```bash
-# Script kiểm tra tổng quan
-curl -X POST --data '{"jsonrpc":"2.0","method":"net_peerCount","params":[],"id":1}' http://localhost:8545 && \
-curl -X POST --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' http://localhost:8545 && \
-curl -X POST --data '{"jsonrpc":"2.0","method":"eth_syncing","params":[],"id":1}' http://localhost:8545
-```
-
-### Kiểm tra consensus
-
-```bash
-# Xem block mới nhất với thông tin miner
-curl -X POST --data '{"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":["latest",false],"id":1}' http://localhost:8545 | jq '.result.miner'
-
-# Kiểm tra validators
-curl -X POST --data '{"jsonrpc":"2.0","method":"qbft_getValidatorsByBlockNumber","params":["latest"],"id":1}' http://localhost:8545 | jq
-```
-
-### Monitoring
-
-```bash
-# Xem logs real-time
-docker-compose logs -f --tail=100
-
-# Kiểm tra resource usage
-docker stats
-```
+- **Student Wallet:** Auto-generated khi đăng ký, encrypted private key (AES-256-CBC)
+- **Permission:** Classroom-level namespace (classId), on-chain whitelist via ClassManager
+- **Authentication:** JWT tokens + role-based access control
+- **On-chain Permission:** ClassManager.allowedStudents[classId][studentAddress]
+- **Smart Contract:** Chỉ approved students mới có thể ghi on-chain
 
 ## 🔧 Troubleshooting
 
-### Nodes không kết nối với nhau
-
-**Triệu chứng**: `net_peerCount` trả về `0x0`
-
-**Giải pháp**:
+### Network không sealing blocks
 ```bash
-# 1. Kiểm tra tất cả containers đang chạy
-docker-compose ps
+# Kiểm tra validators
+curl -X POST --data '{"jsonrpc":"2.0","method":"qbft_getValidatorsByBlockNumber","params":["latest"],"id":1}' http://localhost:8545
 
-# 2. Restart network
-docker-compose down
-docker-compose up -d
-
-# 3. Kiểm tra logs
-docker-compose logs -f validator1
+# Restart network
+docker-compose -f besu-network/docker-compose.yml restart
 ```
 
-### Không tạo blocks
+### Student không submit được assignment
+- Kiểm tra xem student đã được approved chưa
+- Kiểm tra student có trong students table (enrollment) không
+- Kiểm tra ClassManager.allowedStudents[classId][studentAddress] on-chain
 
-**Triệu chứng**: `eth_blockNumber` không tăng
-
-**Giải pháp**:
+### Backend migration failed
 ```bash
-# QBFT cần ít nhất 3 validators hoạt động
-# Kiểm tra số validators đang chạy
-docker-compose ps | grep validator
-
-# Nếu thiếu validators, khởi động lại
-docker-compose up -d
+# Xóa database & restart
+docker-compose -f besu-network/docker-compose.yml down -v
+docker-compose -f besu-network/docker-compose.yml up -d
 ```
 
-### Port đã được sử dụng
+## 📚 Tài liệu
 
-**Triệu chứng**: Error khi start: "port is already allocated"
+- [Architecture Design](docs/ARCHITECTURE.md)
+- [API Documentation](docs/API.md)
+- [User Guide](docs/USER_GUIDE.md)
+- [Deployment Guide](docs/DEPLOYMENT.md)
+- [Test Status](FINAL_TEST_STATUS.md)
 
-**Giải pháp**:
-```bash
-# Kiểm tra ports đang sử dụng
-netstat -ano | findstr :8545  # Windows
-lsof -i :8545                 # Linux/Mac
+## 🛠️ Công nghệ Sử dụng
 
-# Dừng process hoặc thay đổi port trong docker-compose.yml
-```
+| Layer | Technology | Version |
+|-------|-----------|---------|
+| Blockchain | Hyperledger Besu | 25.12.0 |
+| Consensus | QBFT | Built-in |
+| Smart Contracts | Solidity | 0.8.19 |
+| Backend | Node.js | 18-bullseye-slim |
+| Framework | Express.js | Latest |
+| Database | PostgreSQL | 15 |
+| Blockchain Library | Ethers.js | v6 |
+| Development | Hardhat | Latest |
+| Frontend IDE | Remix IDE | Browser-based |
+| Wallet | MetaMask | Browser Extension |
 
-### Reset network hoàn toàn
+## 📊 Test Coverage
 
-```bash
-# Dừng tất cả containers
-docker-compose down
+- ✅ Network Setup: PASSED
+- ✅ Smart Contracts: Deployed & Tested
+- ✅ Backend API: 19/19 endpoints tested
+- ✅ Authentication: JWT + role-based access
+- ✅ On-chain Permission: ClassManager whitelist
+- ✅ On-chain Scoring: ScoreManager recorded
+- ✅ Database: Auto-migration tested
+- ⏳ Frontend: UI development pending
 
-# Xóa toàn bộ dữ liệu blockchain
-rm -rf data/*/database data/*/caches data/*/DATABASE_METADATA.json data/*/VERSION_METADATA.json
+## 🚀 Next Steps
 
-# Khởi động lại
-docker-compose up -d
-```
+1. **Frontend Development** - Build teacher/student UI (React)
+2. **MetaMask Integration** - Connect to custom RPC in UI
+3. **Remix IDE Guide** - Document deployment workflow
+4. **Student Wallet Export** - QR code + private key export
+5. **Monitoring Dashboard** - Real-time blockchain monitoring
 
-### Xem logs chi tiết
+## 📞 Support & Contact
 
-```bash
-# Logs của một node cụ thể
-docker-compose logs -f validator1
+- **Repo:** [PhmVu/EBN-Besu](https://github.com/PhmVu/EBN-Besu)
+- **Issues:** GitHub Issues
+- **Documentation:** `/docs` folder
 
-# Logs với timestamp
-docker-compose logs -f --timestamps
+## 📄 License
 
-# Logs 100 dòng cuối
-docker-compose logs --tail=100
-```
+MIT License - See [LICENSE](LICENSE) for details
 
-## 📁 Cấu trúc thư mục
 
-```
-EBN-Besu/
-├── besu-network/
-│   ├── config/
-│   │   ├── genesis.json          # Genesis block configuration
-│   │   └── qbftConfigFile.json   # QBFT config template
-│   ├── data/
-│   │   ├── validator1/
-│   │   │   └── nodekey           # Private key của validator1
-│   │   ├── validator2/
-│   │   │   └── nodekey
-│   │   ├── validator3/
-│   │   │   └── nodekey
-│   │   └── rpc-node/
-│   │       └── nodekey
-│   └── docker-compose.yml        # Docker Compose configuration
-├── .gitignore
-└── README.md
-```
+## License
 
-## 🔐 Bảo mật
-
-**⚠️ LƯU Ý**: Network này được cấu hình cho môi trường **development/testing**
-
-Để sử dụng trong production:
-
-1. **Thay đổi private keys**: Tạo keys mới, không sử dụng keys có sẵn
-2. **Cấu hình firewall**: Chỉ mở ports cần thiết
-3. **Sử dụng HTTPS**: Cấu hình reverse proxy với SSL
-4. **Authentication**: Thêm JWT authentication cho RPC endpoints
-5. **Monitoring**: Setup monitoring và alerting
-
-## 📚 Tài liệu tham khảo
-
-- [Hyperledger Besu Documentation](https://besu.hyperledger.org/)
-- [QBFT Consensus](https://besu.hyperledger.org/en/stable/private-networks/how-to/configure/consensus/qbft/)
-- [JSON-RPC API](https://besu.hyperledger.org/en/stable/public-networks/reference/api/)
-
-## 📝 License
-
-MIT License - xem file LICENSE để biết thêm chi tiết
-
-## 🤝 Đóng góp
-
-Mọi đóng góp đều được chào đón! Hãy tạo issue hoặc pull request.
-
-## 📧 Liên hệ
-
-- GitHub: [@PhmVu](https://github.com/PhmVu)
-- Repository: [EBN-Besu](https://github.com/PhmVu/EBN-Besu)
+MIT

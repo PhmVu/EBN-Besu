@@ -71,6 +71,69 @@ class WalletService {
       return false;
     }
   }
+
+  /**
+   * Mark private key as shown (one-time policy)
+   * @param {Object} db - Database connection
+   * @param {number} userId - User ID
+   * @returns {Promise<void>}
+   */
+  static async markPrivateKeyAsShown(db, userId) {
+    await db.query(
+      "UPDATE wallet_keys SET shown = true, shown_at = NOW() WHERE user_id = $1",
+      [userId]
+    );
+  }
+
+  /**
+   * Check if private key has been shown
+   * @param {Object} db - Database connection
+   * @param {number} userId - User ID
+   * @returns {Promise<boolean>}
+   */
+  static async isPrivateKeyShown(db, userId) {
+    const result = await db.query(
+      "SELECT shown FROM wallet_keys WHERE user_id = $1",
+      [userId]
+    );
+    if (result.rows.length === 0) {
+      return false;
+    }
+    return result.rows[0].shown;
+  }
+
+  /**
+   * Get private key if not shown yet
+   * @param {Object} db - Database connection
+   * @param {number} userId - User ID
+   * @param {string} password - Password to decrypt
+   * @returns {Promise<string|null>} Private key or null if already shown
+   */
+  static async getPrivateKeyIfNotShown(db, userId, password) {
+    const result = await db.query(
+      "SELECT encrypted_key, shown FROM wallet_keys WHERE user_id = $1",
+      [userId]
+    );
+
+    if (result.rows.length === 0) {
+      throw new Error("Wallet keys not found for user");
+    }
+
+    const { encrypted_key, shown } = result.rows[0];
+
+    if (shown) {
+      return null; // Already shown
+    }
+
+    try {
+      const decrypted = this.decryptPrivateKey(encrypted_key, password);
+      // Mark as shown immediately after decryption
+      await this.markPrivateKeyAsShown(db, userId);
+      return decrypted;
+    } catch (error) {
+      throw new Error("Failed to decrypt private key: " + error.message);
+    }
+  }
 }
 
 module.exports = WalletService;

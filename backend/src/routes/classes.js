@@ -10,6 +10,7 @@ router.use(authenticate);
 router.post("/", requireTeacher, ClassController.createClass);
 router.get("/", requireTeacher, ClassController.getClasses);
 router.get("/:id", requireTeacher, ClassController.getClassById);
+router.get("/:id/statistics", requireTeacher, ClassController.getClassStatistics);
 router.post("/:id/close", requireTeacher, ClassController.closeClass);
 router.post("/:id/students", requireTeacher, ClassController.addStudents);
 

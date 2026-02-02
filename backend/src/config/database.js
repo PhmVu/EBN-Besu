@@ -1,12 +1,12 @@
 const { Pool } = require("pg");
-require("dotenv").config();
+const { db } = require("./env");
 
 const pool = new Pool({
-  host: process.env.DB_HOST || "localhost",
-  port: process.env.DB_PORT || 5432,
-  database: process.env.DB_NAME || "besu_training",
-  user: process.env.DB_USER || "postgres",
-  password: process.env.DB_PASSWORD || "postgres",
+  host: db.host,
+  port: db.port,
+  database: db.name,
+  user: db.user,
+  password: db.password,
   max: 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 2000,
@@ -14,7 +14,7 @@ const pool = new Pool({
 
 // Test connection
 pool.on("connect", () => {
-  console.log("Database connected");
+  console.log("Database connected successfully");
 });
 
 pool.on("error", (err) => {

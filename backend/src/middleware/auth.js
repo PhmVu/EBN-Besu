@@ -55,8 +55,36 @@ const requireStudent = (req, res, next) => {
   next();
 };
 
+/**
+ * Middleware to verify JWT token and set req.user
+ */
+const verifyToken = authenticate;
+
+/**
+ * Middleware to authorize teacher role
+ */
+const authorizeTeacher = (req, res, next) => {
+  if (!req.user || req.user.role !== "teacher") {
+    return res.status(403).json({ error: "Teacher access required" });
+  }
+  next();
+};
+
+/**
+ * Middleware to authorize student role
+ */
+const authorizeStudent = (req, res, next) => {
+  if (!req.user || req.user.role !== "student") {
+    return res.status(403).json({ error: "Student access required" });
+  }
+  next();
+};
+
 module.exports = {
   authenticate,
+  verifyToken,
   requireTeacher,
+  authorizeTeacher,
   requireStudent,
+  authorizeStudent,
 };

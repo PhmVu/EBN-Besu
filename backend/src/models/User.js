@@ -40,6 +40,11 @@ class User {
     );
     return result.rows[0];
   }
+
+  // Alias for updateWalletAddress
+  static async updateWallet(userId, walletAddress) {
+    return this.updateWalletAddress(userId, walletAddress);
+  }
 }
 
 module.exports = User;

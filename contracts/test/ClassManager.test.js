@@ -313,4 +313,139 @@ describe("ClassManager", function () {
       expect(receipt.gasUsed).to.be.lt(150000);
     });
   });
+
+  // Phase 3.2: Approval Workflow Tests
+  describe("Approval Workflow (Phase 3.2)", function () {
+    beforeEach(async function () {
+      // Create a class before each approval test
+      await classManager.connect(teacher).createClass("APPROVAL101");
+    });
+
+    it("Should allow teacher to approve student", async function () {
+      const tx = await classManager
+        .connect(teacher)
+        .approveAndAddStudent("APPROVAL101", student1.address);
+      
+      const receipt = await tx.wait();
+      expect(receipt).to.exist;
+
+      // Verify approval was recorded
+      const approvalInfo = await classManager.getApprovalInfo(
+        "APPROVAL101",
+        student1.address
+      );
+      expect(approvalInfo[0]).to.equal(true);
+      expect(approvalInfo[2]).to.equal(teacher.address);
+    });
+
+    it("Should not allow non-teacher to approve student", async function () {
+      await expect(
+        classManager
+          .connect(student1)
+          .approveAndAddStudent("APPROVAL101", student2.address)
+      ).to.be.revertedWith("ClassManager: Only teacher can perform this action");
+    });
+
+    it("Should emit StudentApproved event when approving", async function () {
+      const tx = await classManager
+        .connect(teacher)
+        .approveAndAddStudent("APPROVAL101", student1.address);
+
+      await expect(tx).to.emit(classManager, "StudentApproved");
+    });
+
+    it("Should track approver and timestamp correctly", async function () {
+      const tx = await classManager
+        .connect(teacher)
+        .approveAndAddStudent("APPROVAL101", student1.address);
+      const receipt = await tx.wait();
+      const block = await ethers.provider.getBlock(receipt.blockNumber);
+
+      const approvalInfo = await classManager.getApprovalInfo(
+        "APPROVAL101",
+        student1.address
+      );
+
+      expect(approvalInfo[0]).to.equal(true);
+      expect(approvalInfo[2]).to.equal(teacher.address);
+      expect(approvalInfo[1]).to.equal(block.timestamp);
+    });
+
+    it("Should not allow approving already approved student", async function () {
+      // First approval
+      await classManager
+        .connect(teacher)
+        .approveAndAddStudent("APPROVAL101", student1.address);
+
+      // Try to approve again
+      await expect(
+        classManager
+          .connect(teacher)
+          .approveAndAddStudent("APPROVAL101", student1.address)
+      ).to.be.revertedWith("ClassManager: Student already approved");
+    });
+
+    it("Should not allow approving zero address", async function () {
+      await expect(
+        classManager
+          .connect(teacher)
+          .approveAndAddStudent("APPROVAL101", ethers.ZeroAddress)
+      ).to.be.revertedWith("ClassManager: Invalid student address");
+    });
+
+    it("Should not allow approving student in closed class", async function () {
+      // Close the class first
+      await classManager.connect(teacher).closeClass("APPROVAL101");
+
+      // Try to approve in closed class
+      await expect(
+        classManager
+          .connect(teacher)
+          .approveAndAddStudent("APPROVAL101", student1.address)
+      ).to.be.revertedWith("ClassManager: Class is closed");
+    });
+
+    it("Should return correct approval info for unapproved student", async function () {
+      const approvalInfo = await classManager.getApprovalInfo(
+        "APPROVAL101",
+        student1.address
+      );
+
+      expect(approvalInfo[0]).to.equal(false);
+      expect(approvalInfo[1]).to.equal(0);
+      expect(approvalInfo[2]).to.equal(ethers.ZeroAddress);
+    });
+
+    it("Should handle multiple approvals in same class", async function () {
+      // Approve two students
+      await classManager
+        .connect(teacher)
+        .approveAndAddStudent("APPROVAL101", student1.address);
+      await classManager
+        .connect(teacher)
+        .approveAndAddStudent("APPROVAL101", student2.address);
+
+      // Verify both are approved
+      const [approved1] = await classManager.getApprovalInfo(
+        "APPROVAL101",
+        student1.address
+      );
+      const [approved2] = await classManager.getApprovalInfo(
+        "APPROVAL101",
+        student2.address
+      );
+
+      expect(approved1).to.equal(true);
+      expect(approved2).to.equal(true);
+    });
+
+    it("Should measure gas for approveAndAddStudent", async function () {
+      const tx = await classManager
+        .connect(teacher)
+        .approveAndAddStudent("APPROVAL101", student1.address);
+      const receipt = await tx.wait();
+      console.log(`      Gas used for approveAndAddStudent: ${receipt.gasUsed.toString()}`);
+      expect(receipt.gasUsed).to.be.lt(200000);
+    });
+  });
 });

@@ -7,6 +7,9 @@ const errorHandler = require("./middleware/errorHandler");
 const authRoutes = require("./routes/auth");
 const classRoutes = require("./routes/classes");
 const studentRoutes = require("./routes/students");
+const assignmentRoutes = require("./routes/assignments");
+const submissionRoutes = require("./routes/submissions");
+const approvalRoutes = require("./routes/approvals");
 
 const app = express();
 
@@ -24,6 +27,9 @@ app.get("/health", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/classes", classRoutes);
 app.use("/api/students", studentRoutes);
+app.use("/api", assignmentRoutes);
+app.use("/api", submissionRoutes);
+app.use("/api", approvalRoutes);
 
 // Error handler (must be last)
 app.use(errorHandler);

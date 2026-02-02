@@ -33,6 +33,11 @@ contract ClassManager {
     // Danh sách tất cả classId
     string[] public allClassIds;
 
+    // APPROVAL TRACKING (Phase 3.2 NEW)
+    mapping(string => mapping(address => bool)) public approvedStudents;
+    mapping(string => mapping(address => address)) public approvalApprover;
+    mapping(string => mapping(address => uint256)) public approvalTimestamp;
+
     // Events
     event ClassCreated(
         string indexed classId,
@@ -63,6 +68,13 @@ contract ClassManager {
         address indexed student,
         bool allowed,
         address indexed teacher
+    );
+
+    event StudentApproved(
+        string indexed classId,
+        address indexed student,
+        address indexed approvedBy,
+        uint256 timestamp
     );
 
     // Modifier kiểm tra chỉ teacher của lớp mới được gọi
@@ -135,6 +147,41 @@ contract ClassManager {
 
         allowedStudents[classId][student] = true;
 
+        emit StudentAdded(classId, student, msg.sender);
+        emit PermissionUpdated(classId, student, true, msg.sender);
+    }
+
+    /**
+     * @dev Phê duyệt và thêm sinh viên vào whitelist (Phase 3.2 NEW)
+     * @param classId ID của lớp học
+     * @param student Địa chỉ ví của sinh viên
+     */
+    function approveAndAddStudent(
+        string memory classId,
+        address student
+    ) public onlyTeacher(classId) onlyWhenOpen(classId) {
+        require(
+            student != address(0),
+            "ClassManager: Invalid student address"
+        );
+        require(
+            !approvedStudents[classId][student],
+            "ClassManager: Student already approved"
+        );
+        require(
+            !allowedStudents[classId][student],
+            "ClassManager: Student already whitelisted"
+        );
+
+        // Mark as approved with audit trail
+        approvedStudents[classId][student] = true;
+        approvalApprover[classId][student] = msg.sender;
+        approvalTimestamp[classId][student] = block.timestamp;
+
+        // Add to whitelist
+        allowedStudents[classId][student] = true;
+
+        emit StudentApproved(classId, student, msg.sender, block.timestamp);
         emit StudentAdded(classId, student, msg.sender);
         emit PermissionUpdated(classId, student, true, msg.sender);
     }
@@ -227,6 +274,33 @@ contract ClassManager {
             "ClassManager: Index out of bounds"
         );
         return allClassIds[index];
+    }
+
+    /**
+     * @dev Lấy thông tin phê duyệt của sinh viên (Phase 3.2 NEW)
+     * @param classId ID của lớp học
+     * @param student Địa chỉ ví của sinh viên
+     * @return approved Đã được phê duyệt hay chưa
+     * @return timestamp Thời gian phê duyệt
+     * @return approver Địa chỉ người phê duyệt (teacher)
+     */
+    function getApprovalInfo(
+        string memory classId,
+        address student
+    )
+        public
+        view
+        returns (
+            bool approved,
+            uint256 timestamp,
+            address approver
+        )
+    {
+        return (
+            approvedStudents[classId][student],
+            approvalTimestamp[classId][student],
+            approvalApprover[classId][student]
+        );
     }
 }
 

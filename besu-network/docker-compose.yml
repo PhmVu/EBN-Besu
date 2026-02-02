@@ -1,4 +1,59 @@
 services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15
+    container_name: besu-training-db
+    environment:
+      POSTGRES_DB: besu_training
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      besu-network:
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: besu-training-backend
+    environment:
+      PORT: 3000
+      NODE_ENV: production
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: besu_training
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      JWT_SECRET: ${JWT_SECRET:-change_this_secret}
+      RPC_URL: http://rpc-node:8545
+      RPC_WS_URL: ws://rpc-node:8546
+      CHAIN_ID: 1337
+      ADMIN_ADDRESS: ${ADMIN_ADDRESS}
+      ADMIN_PRIVATE_KEY: ${ADMIN_PRIVATE_KEY}
+      CLASS_MANAGER_ADDRESS: 0xc6b3bd2c778deef8140870ec13c03beb148460b9
+      SCORE_MANAGER_ADDRESS: 0xc0c7cc975153f4da0a5f88a528da872011415f84
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rpc-node:
+        condition: service_started
+    networks:
+      besu-network:
+    volumes:
+      - ../backend:/app
+      - /app/node_modules
+
   validator1:
     image: hyperledger/besu:latest
     container_name: besu-validator1
@@ -81,3 +136,6 @@ networks:
     ipam:
       config:
         - subnet: 172.20.0.0/24
+
+volumes:
+  postgres_data:
